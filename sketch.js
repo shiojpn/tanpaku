@@ -1,32 +1,33 @@
-// 配色を一括変更できるようにグローバル変数で指定
-let fgColor = "#ebebd3";         // 出力する文字列、線、（多角形の線も）に使う色
+// 配色（グローバル変数）
+let fgColor = "#ebebd3";         // 線や文字の色
 let bgColor = "#083d77";         // 背景色
-let polyFillColor = "#083d77";   // 多角形の塗り色（背景色と同じ色に管理）
+let polyFillColor = "#083d77";   // 多角形の塗り色（背景色と同じ色）
 
-let inputField, button, saveButton;
+let inputField, button, saveButton, gifButton;
 let sequence = "aiwertunoaapmoa"; // 初期入力文字列（固定長推奨）
-let chain = [];                  // ノード（位置、角度、文字情報）の配列
-let zigzagSign = 1;              // ジグザグ時の角度オフセットの符号を交互にするためのグローバル変数
-let cnv;                         // キャンバス用グローバル変数（画像保存に利用）
+let chain = [];                  // ノード情報の配列
+let zigzagSign = 1;              // ジグザグ用符号
+let cnv;                         // キャンバス
 
 function setup() {
-  // キャンバス作成（グローバル変数 cnv に格納）
+  // キャンバス作成
   cnv = createCanvas(windowWidth, windowHeight);
   angleMode(RADIANS);
   background(bgColor);
   
-  // 画面下端から 60px 上げた位置に input とボタンを配置
-  let inputY = height - 60;
+  // コントロール用コンテナ（index.html の #controls）に親子関係を設定
+  let controlsDiv = select('#controls');
+  
+  // UI 部品の生成と配置（親を controlsDiv に設定）
   inputField = createInput(sequence);
-  inputField.position(20, inputY);
+  inputField.parent(controlsDiv);
   
   button = createButton("Generate");
-  button.position(inputField.x + inputField.width + 10, inputY);
+  button.parent(controlsDiv);
   button.mousePressed(generateStructure);
   
-  // 生成した画像を保存するボタンを追加
   saveButton = createButton("Save Image");
-  saveButton.position(button.x + button.width + 10, inputY);
+  saveButton.parent(controlsDiv);
   saveButton.mousePressed(saveImage);
   
   generateStructure();
@@ -36,13 +37,13 @@ function generateStructure() {
   // 入力文字列を小文字に統一して取得
   sequence = inputField.value().toLowerCase();
   
-  // アルファベット以外の文字が含まれている場合はエラー表示
+  // アルファベット以外が混ざっている場合はエラー表示
   if (!/^[a-z]+$/.test(sequence)) {
     alert("エラー: アルファベットのみを入力してください。");
     return;
   }
   
-  // 入力文字列から乱数シードを生成（同じ文字列なら同じ構造に）
+  // 文字列から乱数シードを生成（同じ文字列なら同じ構造）
   let seed = 0;
   for (let i = 0; i < sequence.length; i++) {
     seed += sequence.charCodeAt(i);
@@ -52,51 +53,40 @@ function generateStructure() {
   // チェーン配列の初期化
   chain = [];
   
-  // チェーンの起点をキャンバス中心に設定
+  // 起点をキャンバス中心に設定
   let start = createVector(width / 2, height / 2);
   let current = start.copy();
-  let angle = 0; // 初期角度（0ラジアン）
+  let angle = 0;
   chain.push({ pos: current.copy(), angle: angle, char: null, value: 0 });
   
-  // ジグザグ用の符号を初期化
+  // ジグザグ用の符号初期化
   zigzagSign = 1;
   
-  // 各ノード間の基本ステップ長
+  // ノード間の基本ステップ長
   let baseStep = 50;
   
-  // 入力文字列の各文字に対して次のノードを計算
+  // 文字列の各文字から次のノードを計算
   for (let i = 0; i < sequence.length; i++) {
     let ch = sequence.charAt(i);
-    // 'a'→0, 'b'→1, ... 'z'→25 とする
     let value = ch.charCodeAt(0) - 97;
     let angleOffset = 0;
     
-    // 文字の値によって、コイル状かジグザグかを決定
     if (value < 13) {
-      // コイル状：小刻みな正の角度変化（0.5～1.5ラジアン程度）
       angleOffset = map(value, 0, 12, 0.5, 1.5);
     } else {
-      // ジグザグ：より大きな角度変化（0.4～PI*2/3）で、符号を交互に反転
       angleOffset = zigzagSign * map(value, 13, 25, 0.4, PI * 2 / 3);
       zigzagSign = -zigzagSign;
     }
     
-    // 角度を累積
     angle += angleOffset;
-    
-    // ステップ長も文字の値で変化（-30～+30）
     let stepLength = baseStep + map(value, 0, 25, -30, 30);
-    
-    // 新しい位置を計算（極座標→ベクトル変換）
     let dx = cos(angle) * stepLength;
     let dy = sin(angle) * stepLength;
     current = p5.Vector.add(current, createVector(dx, dy));
-    
-    // ノード情報を配列に追加
     chain.push({ pos: current.copy(), angle: angle, char: ch, value: value });
   }
   
-  // チェーン全体のバウンディングボックスを計算し、全体をキャンバス中心に再配置
+  // バウンディングボックスを計算し、キャンバス中心に再配置
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (let node of chain) {
     if (node.pos.x < minX) minX = node.pos.x;
@@ -117,9 +107,9 @@ function generateStructure() {
 }
 
 function draw() {
-  background(bgColor); // 背景色はグローバル変数から
+  background(bgColor);
   
-  // 一次構造：ノードを連結する直線を fgColor で描画
+  // 一次構造（ノードを連結する直線）
   stroke(fgColor);
   strokeWeight(2);
   noFill();
@@ -129,9 +119,7 @@ function draw() {
   }
   endShape();
   
-  // 文字列の位置関係から新たな模様を生成
-  // 「ある文字が３文字後に再登場したら」そのときのノード同士を線で結ぶ
-  // chain[1] が sequence[0] に対応するため、i 番目の文字は chain[i+1] に対応
+  // 3文字後に同じ文字があれば線で結ぶ
   for (let i = 0; i < sequence.length - 3; i++) {
     if (sequence.charAt(i) === sequence.charAt(i + 3)) {
       let indexA = i + 1;
@@ -143,19 +131,15 @@ function draw() {
     }
   }
   
-  // ノード上に、多角形（残基のような形状）を稀に描画
+  // ノード上に多角形を描画（60% の確率）
   for (let i = 1; i < chain.length; i++) {
-    // 60% の確率で多角形を描く
     if (random(1) < 0.6) {
       let node = chain[i];
       push();
       translate(node.pos.x, node.pos.y);
-      // ノードの角度に合わせて回転（任意）
       rotate(node.angle);
-      // 文字の値をもとに、3～8 辺の多角形を描く
       let sides = int(map(node.value, 0, 25, 3, 8));
-      let radius = 10; // 多角形の大きさは固定
-      // 多角形の塗り色は polyFillColor で管理
+      let radius = 10;
       fill(polyFillColor);
       strokeWeight(2);
       stroke(fgColor);
@@ -164,7 +148,7 @@ function draw() {
     }
   }
   
-  // 左上に入力文字列を大文字で表示（フォントは細い指定）
+  // 入力文字列を左上に表示
   noStroke();
   fill(fgColor);
   textSize(15);
@@ -174,7 +158,7 @@ function draw() {
   noLoop();
 }
 
-// ヘルパー関数：中心 (x, y) から半径 radius で npoints 辺の正多角形を描く
+// ヘルパー関数：中心 (x, y) から半径 radius の正多角形を描く
 function polygon(x, y, radius, npoints) {
   let angleStep = TWO_PI / npoints;
   beginShape();
@@ -186,8 +170,19 @@ function polygon(x, y, radius, npoints) {
   endShape(CLOSE);
 }
 
-// 生成した画像を保存する関数
+// 画像保存用の関数
 function saveImage() {
-  // キャンバスの内容を "generative_art.png" として保存
   saveCanvas(cnv, "generative_art", "png");
+}
+
+// ランダムな英字列（小文字）を生成する関数
+function generateRandomString(length) {
+  let chars = 'abcdefghijklmnopqrstuvwxyz';
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    str += chars.charAt(floor(random(chars.length)));
+  }
+  return str;
+}
+
 }
