@@ -18,10 +18,10 @@ function setup() {
   // 画面下端から 60px 上げた位置に input とボタンを配置
   let inputY = height - 40;
   inputField = createInput(sequence);
-  inputField.position(20, inputY - 30);
+  inputField.position(20, inputY - 40);
   
   button = createButton("Generate");
-  button.position(inputField.x + inputField.width + 10, inputY - 30);
+  button.position(inputField.x + inputField.width + 10, inputY - 40);
   button.mousePressed(generateStructure);
   
   // 生成した画像を保存するボタンを追加
