@@ -16,17 +16,17 @@ function setup() {
   background(bgColor);
   
   // 画面下端から 60px 上げた位置に input とボタンを配置
-  let inputY = height - 60;
+  let inputY = height - 40;
   inputField = createInput(sequence);
-  inputField.position(20, inputY);
+  inputField.position(20, inputY - 30);
   
   button = createButton("Generate");
-  button.position(inputField.x + inputField.width + 10, inputY);
+  button.position(inputField.x + inputField.width + 10, inputY - 30);
   button.mousePressed(generateStructure);
   
   // 生成した画像を保存するボタンを追加
   saveButton = createButton("Save Image");
-  saveButton.position(button.x + button.width + 10, inputY);
+  saveButton.position(20, inputY);
   saveButton.mousePressed(saveImage);
   
   generateStructure();
