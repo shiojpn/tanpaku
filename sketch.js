@@ -3,11 +3,11 @@ let fgColor = "#ebebd3";         // 出力する文字列、線、（多角形�
 let bgColor = "#083d77";         // 背景色
 let polyFillColor = "#083d77";   // 多角形の塗り色（背景色と同じ色に管理）
 
-let inputField, button, shareButton;
+let inputField, button, saveButton;
 let sequence = "aiwertunoaapmoa"; // 初期入力文字列（固定長推奨）
 let chain = [];                  // ノード（位置、角度、文字情報）の配列
 let zigzagSign = 1;              // ジグザグ時の角度オフセットの符号を交互にするためのグローバル変数
-let cnv;                         // グローバルなキャンバス変数（シェア用に利用）
+let cnv;                         // キャンバス用グローバル変数（画像保存に利用）
 
 function setup() {
   // キャンバス作成（グローバル変数 cnv に格納）
@@ -24,10 +24,10 @@ function setup() {
   button.position(inputField.x + inputField.width + 10, inputY);
   button.mousePressed(generateStructure);
   
-  // 生成した画像を Twitter に共有するためのボタンを追加
-  shareButton = createButton("Share on Twitter");
-  shareButton.position(button.x + button.width + 10, inputY);
-  shareButton.mousePressed(shareOnTwitter);
+  // 生成した画像を保存するボタンを追加
+  saveButton = createButton("Save Image");
+  saveButton.position(button.x + button.width + 10, inputY);
+  saveButton.mousePressed(saveImage);
   
   generateStructure();
 }
@@ -164,7 +164,7 @@ function draw() {
     }
   }
   
-  // 左上に入力文字列を大文字で表示（細いフォント指定）
+  // 左上に入力文字列を大文字で表示（フォントは細い指定）
   noStroke();
   fill(fgColor);
   textSize(15);
@@ -186,28 +186,8 @@ function polygon(x, y, radius, npoints) {
   endShape(CLOSE);
 }
 
-/*
-  生成した画像を Twitter に共有するための関数
-  (※注意: ブラウザの Web Share API で画像ファイルの共有がサポートされていれば動作しますが、
-         サポートされない環境の場合は、Twitter のシェア用ページを開きます)
-*/
-function shareOnTwitter() {
-  // p5.js のキャンバス要素から Blob を作成
-  cnv.elt.toBlob(blob => {
-    const file = new File([blob], 'art.png', { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: 'My Generative Art',
-        text: 'Check out my generative art!'
-      })
-      .then(() => console.log('Share was successful.'))
-      .catch((error) => console.error('Sharing failed', error));
-    } else {
-      // Web Share API が利用できない場合は、Twitter のシェアページを開く（※画像自動添付はできないのでURLのみ）
-      let tweetText = encodeURIComponent("Check out my generative art!");
-      let tweetUrl = encodeURIComponent(window.location.href);
-      window.open(`https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`, '_blank');
-    }
-  });
+// 生成した画像を保存する関数
+function saveImage() {
+  // キャンバスの内容を "generative_art.png" として保存
+  saveCanvas(cnv, "generative_art", "png");
 }
