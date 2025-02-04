@@ -1,0 +1,32 @@
+/* ページ全体の余白等のリセットと基本フォントの指定 */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: sans-serif;
+  /* 背景色はスケッチ内の bgColor (#083d77) と合わせる */
+  background-color: #083d77;
+}
+
+/* p5.js が生成する input, button 要素のスタイル */
+input, button {
+  font-size: 16px;
+  padding: 5px 10px;
+  border: none;
+  outline: none;
+}
+
+/* ボタンにカーソルを合わせたときの見た目 */
+button {
+  cursor: pointer;
+  background-color: #ebebd3;
+  color: #083d77;
+  border-radius: 4px;
+  margin-right: 5px;
+}
+
+/* input は薄い枠線で */
+input {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
